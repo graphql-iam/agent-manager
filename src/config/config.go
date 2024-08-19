@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gopkg.in/yaml.v3"
 	"io"
+	"log"
 	"os"
 )
 
@@ -17,6 +18,22 @@ type Config struct {
 type CacheOptions struct {
 	Expiration int `yaml:"expiration"`
 	Purge      int `yaml:"purge"`
+}
+
+const ConfigPathEnvName = "AGENT_MANAGER_CONFIG_PATH"
+
+func NewConfig() Config {
+	configPath := "./config.yaml"
+
+	if os.Getenv(ConfigPathEnvName) != "" {
+		configPath = os.Getenv(ConfigPathEnvName)
+	}
+
+	cfg, err := getConfig(configPath)
+	if err != nil {
+		log.Fatalf("could not parse config: %v", err)
+	}
+	return cfg
 }
 
 func (c *Config) validateAndFillDefaults() error {
@@ -44,7 +61,7 @@ func (c *CacheOptions) validateAndFillDefaults() error {
 	return nil
 }
 
-func GetConfig(path string) (Config, error) {
+func getConfig(path string) (Config, error) {
 	var res Config
 
 	file, err := os.Open(path)

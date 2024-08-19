@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-iam/agent-manager/src/repository"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -9,8 +10,15 @@ import (
 )
 
 type RolesHandler struct {
-	DB              *mongo.Database
-	RolesRepository *repository.RolesRepository
+	db              *mongo.Database
+	rolesRepository *repository.RolesRepository
+}
+
+func NewRolesHandler(db *mongo.Database, rolesRepository *repository.RolesRepository) RolesHandler {
+	return RolesHandler{
+		db:              db,
+		rolesRepository: rolesRepository,
+	}
 }
 
 func (r *RolesHandler) GetRoleByName(c *gin.Context) {
@@ -20,7 +28,7 @@ func (r *RolesHandler) GetRoleByName(c *gin.Context) {
 		return
 	}
 
-	role, err := r.RolesRepository.GetRoleByName(roleName)
+	role, err := r.rolesRepository.GetRoleByName(roleName)
 	if err != nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
@@ -30,15 +38,16 @@ func (r *RolesHandler) GetRoleByName(c *gin.Context) {
 }
 
 func (r *RolesHandler) GetRolesByNames(c *gin.Context) {
-	roleNamesStr := c.Query("roles")
+	roleNamesStr, found := c.GetQuery("roles")
 	roleNames := strings.Split(roleNamesStr, ",")
-	if roleNamesStr == "" || len(roleNames) == 0 {
+	if !found || roleNamesStr == "" || len(roleNames) == 0 {
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
-	roles, err := r.RolesRepository.GetRolesByNames(roleNames)
+	roles, err := r.rolesRepository.GetRolesByNames(roleNames)
 	if err != nil {
+		fmt.Printf("Error getting roles from database: %v\n", err.Error())
 		c.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
